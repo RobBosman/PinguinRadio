@@ -1,0 +1,44 @@
+<html>
+<head>
+<title>MP3 upload tester</title>
+<script type="text/javascript">
+function uploadMP3File(formId, ref) {
+    // Upload de geselecteerde MP3 file.
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "http://localhost:9080/pinguin/wp-admin/../wp-content/plugins/pinguinradio-graadmeter/uploadMP3.php?XDEBUG_SESSION_START=netbeans-xdebug", true);
+    xhr.onload = function(event) {
+alert("YO_2 onload [" + xhr.status + "]" + xhr.responseText);
+        if (xhr.status !== 200 || xhr.responseText !== "OK") {
+            alertDialog("Error " + xhr.status + " occurred while uploading MP3 file.\n" + xhr.responseText,
+                "ERROR", false);
+        }
+    };
+    var formData = new FormData(document.forms[formId]);
+    formData.append("ref", ref);
+alert("YO_1 (" + ref + ")");
+    xhr.send(formData);
+}
+</script>
+</head>
+<body>
+
+<!--
+<form id="mp3Form" method="post" enctype="multipart/form-data"
+-->
+<form id="mp3Form" method="post" enctype="multipart/form-data"
+	action="http://localhost:9080/pinguin/wp-content/plugins/pinguinradio-graadmeter/uploadMP3.php">
+	<label for="mp3File">Filename:</label>
+	<input type="file" name="mp3File" id="mp3File"><br>
+	<input type="button" name="ok" value="OK" onclick="uploadMP3File('mp3Form', 'DUMMY_REF')">
+	<input type="submit" name="submit" value="Submit">
+</form>
+
+<!--
+<form id="mp3Form">
+	<label for="file">MP3 file</label>
+	<br /><input type="file" name="mp3File" id="mp3File" />
+</form>
+-->
+
+</body>
+</html>

@@ -1,0 +1,67 @@
+# BEGIN iThemes Security
+	# BEGIN Ban Users
+		Order allow,deny
+		SetEnvIF REMOTE_ADDR "^208\.109\.254\.101$" DenyAccess
+		SetEnvIF X-FORWARDED-FOR "^208\.109\.254\.101$" DenyAccess
+		SetEnvIF X-CLUSTER-CLIENT-IP "^208\.109\.254\.101$" DenyAccess
+		
+		Deny from env=DenyAccess
+		Allow from all
+		
+	# END Ban Users
+	# BEGIN Tweaks
+		<IfModule mod_rewrite.c>
+			RewriteEngine On
+		
+			# Rules to prevent php execution in uploads
+			RewriteRule ^(.*)/uploads/(.*).php(.?) - [F]
+		
+			# Rules to block suspicious URIs
+			RewriteCond %{QUERY_STRING} \.\.\/ [NC,OR]
+			RewriteCond %{QUERY_STRING} ^.*\.(bash|git|hg|log|svn|swp|cvs) [NC,OR]
+			RewriteCond %{QUERY_STRING} etc/passwd [NC,OR]
+			RewriteCond %{QUERY_STRING} boot\.ini [NC,OR]
+			RewriteCond %{QUERY_STRING} ftp\:  [NC,OR]
+			RewriteCond %{QUERY_STRING} http\:  [NC,OR]
+			RewriteCond %{QUERY_STRING} https\:  [NC,OR]
+			RewriteCond %{QUERY_STRING} (\<|%3C).*script.*(\>|%3E) [NC,OR]
+			RewriteCond %{QUERY_STRING} mosConfig_[a-zA-Z_]{1,21}(=|%3D) [NC,OR]
+			RewriteCond %{QUERY_STRING} base64_encode.*\(.*\) [NC,OR]
+			RewriteCond %{QUERY_STRING} ^.*(\[|\]|\(|\)|<|>|ê|"|;|\?|\*|=$).* [NC,OR]
+			RewriteCond %{QUERY_STRING} ^.*(&#x22;|&#x27;|&#x3C;|&#x3E;|&#x5C;|&#x7B;|&#x7C;).* [NC,OR]
+			RewriteCond %{QUERY_STRING} ^.*(%24&x).* [NC,OR]
+			RewriteCond %{QUERY_STRING} ^.*(127\.0).* [NC,OR]
+			RewriteCond %{QUERY_STRING} ^.*(globals|encode|localhost|loopback).* [NC,OR]
+			RewriteCond %{QUERY_STRING} ^.*(request|concat|insert|union|declare).* [NC]
+			RewriteCond %{QUERY_STRING} !^loggedout=true
+			RewriteCond %{QUERY_STRING} !^action=rp
+			RewriteCond %{HTTP_COOKIE} !^.*wordpress_logged_in_.*$
+			RewriteCond %{HTTP_REFERER} !^http://maps\.googleapis\.com(.*)$
+			RewriteRule ^(.*)$ - [F]
+		
+			# Rules to help reduce spam
+			RewriteCond %{REQUEST_METHOD} POST
+			RewriteCond %{REQUEST_URI} ^(.*)wp-comments-post\.php*
+			RewriteCond %{HTTP_REFERER} !^(.*)pinguinradio.com.* 
+			RewriteCond %{HTTP_REFERER} !^http://jetpack\.wordpress\.com/jetpack-comment/ [OR]
+			RewriteCond %{HTTP_USER_AGENT} ^$
+			RewriteRule ^(.*)$ - [F]
+		</IfModule>
+	# END Tweaks
+# END iThemes Security
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+# add a trailing slash to /wp-admin
+RewriteRule ^([_0-9a-zA-Z-]+/)?wp-admin$ $1wp-admin/ [R=301,L]
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+RewriteRule ^([_0-9a-zA-Z-]+/)?(wp-(content|admin|includes).*) $2 [L]
+RewriteRule ^([_0-9a-zA-Z-]+/)?(.*\.php)$ $2 [L]
+RewriteRule . index.php [L]
+php_value upload_max_filesize 20M
+php_value post_max_size 20M
+php_value max_execution_time 200
+php_value max_input_time 200
+php_value memory_limit 64M

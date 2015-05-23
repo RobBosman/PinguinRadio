@@ -1,0 +1,52 @@
+Configure Dev Env:
+
+	Install _WampServer_ (Apache 2.4 + PHP 5.4 + MySQL 5.5)
+	Install _Visual C++ 2010 SP1 Redistributable Package_, see Download page at http://www.wampserver.com/en/
+	Install _HeidiSQL_
+	Install _NetBeans PHP_
+
+	In _httpd.conf_ change default port 80 to 9080:
+		Listen 9080
+		ServerName localhost:9080
+	In _httpd.conf_ add access permission to www files:
+		<Directory "c:/Users/Rob/Werk/">
+			Options Indexes FollowSymLinks
+			AllowOverride All
+			Require local
+		</Directory>
+	Enable Apache filter_module
+	Enable Apache rewrite_module
+	In Wamp/www/.htaccess add this:
+		<IfModule mod_rewrite.c>
+			RewriteEngine On
+			RewriteBase /
+			RewriteRule (_assets|wp\-)(.*)$ /pinguin/$1$2 [NC]
+		</IfModule>
+
+	Start WampServer
+	Set password for MySQL root to "DB_SECRET" (using HeidiSQL)
+	Create MySQL-database _pinguinradio_
+	Run SQL scripts _createExtTables.sql_, _createOldTables.sql_ and _fillOldContent.sql_
+	Edit _wp-config.php_:
+		define('DB_NAME', 'pinguinradio');
+		define('DB_USER', 'root');
+		define('DB_PASSWORD', 'DB_SECRET');
+		define('DB_HOST', 'localhost');
+
+		define('WP_DEBUG', true);
+		define('WP_DEBUG_LOG', true);
+		define('WP_DEBUG_DISPLAY', false);
+		@ini_set('display_errors', 0);
+
+	Create alias directory "pinguin" on "C:/Users/Rob/Werk/PinguinRadio/IDE/"
+	Open http://localhost:9080/pinguin/wp-admin/install.php
+		Username: admin
+		Password: WP_SECRET
+		Your email: root@local.host
+
+	Open http://localhost:9080/pinguin/wp-admin/plugins.php and activate plugin _Pinguinradio Graadmeter_
+	Open http://localhost:9080/pinguin/wp-admin/index.php
+
+	Open http://localhost:9080/pinguin//wp-admin/themes.php (Appearance > Themes) and activate theme _Pinguinradio_
+	Open http://localhost:9080/pinguin/wp-admin/post-new.php?post_type=page (Pages > Add New) and select template _Graadmeter 2013 Template_
+	Click _Save Draft_ and then click _Preview_

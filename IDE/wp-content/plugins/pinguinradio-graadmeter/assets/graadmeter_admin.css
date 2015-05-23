@@ -1,0 +1,90 @@
+body {
+    font-size: 10px;
+}
+#wpbody {
+    margin-right: 10px;
+}
+label {
+    font-weight: bold;
+}
+.dataTables_wrapper {
+    min-height: 10px;
+}
+.graadmeter_beheer_button {
+    background-color: #fe8;
+}
+
+.ui-dialog {
+    width: auto !important;
+}
+#mp3Form input[type='file'],
+#formAddTop41 input[type='file'],
+#formAddTip10 input[type='file'] {
+    width: 500px;
+}
+#formAddTop41 #artiest,
+#formAddTip10 #artiest,
+#formAddTop41 #track,
+#formAddTip10 #track {
+    width: 300px;
+}
+
+.graadmeter_no_mp3 {
+    color: #e88;
+    font-size: 11px;
+    font-weight: bold;
+    text-decoration: line-through;
+}
+.graadmeter_mp3_playing {
+    -webkit-animation: rotateText 3s linear 0s infinite;
+    animation: rotateText 3s linear 0s infinite;
+}
+@-webkit-keyframes rotateText {
+    from {-webkit-transform: rotateY(0deg);}
+    to {-webkit-transform: rotateY(360deg);}
+}
+@keyframes rotateText {
+    from {transform: rotateY(0deg);}
+    to {transform: rotateY(360deg);}
+}
+.error {
+    color: red;
+}
+
+.balloontip {
+    display: none;
+    width: 200px;
+    height: 90px;
+    background-color: #ffc;
+    border: 8px solid #666;
+    border-radius: 30px;
+    box-shadow: 2px 2px 4px #888;
+    z-index: 1000;
+}
+.balloontip:before {
+    content: ' ';
+    position: absolute;
+    width: 0;
+    height: 0;
+    right: 15px;
+    top: -50px;
+    border: 25px solid;
+    border-color: transparent #666 #666 transparent;
+}
+.balloontip:after {
+    content: ' ';
+    position: absolute;
+    width: 0;
+    height: 0;
+    right: 22px;
+    top: -30px;
+    border: 15px solid;
+    border-color: transparent #ffc #ffc transparent;
+}
+.balloontip * {
+    margin: 5px 10px 5px 10px;
+}
+
+.oude_tip {
+    background-color: #fd0;
+}

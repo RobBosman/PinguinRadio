@@ -1,0 +1,68 @@
+/*
+Theme Name: Graadmeter 2013 Template
+Theme URI: http://pinguinradio.com/graadmeter
+Author: RoB
+Version: 1.0
+*/
+#graadmeter_article {
+    background:#070510;
+    border-bottom:5px solid #f00;
+}
+#graadmeter_header {
+    background-image:url(/_assets/img/global/layout/bg-graadmeter-boven.jpg);
+    background-repeat:no-repeat;
+    background-size:cover;
+    border-radius:7px 7px 0 0;
+    background-position:bottom;
+    height:272px;
+}
+#graadmeter_header h1 {
+    font-family:'Jockey One',sans-serif;
+    font-weight:bold;
+    font-size:30px;
+    text-transform:none;
+    color:#fff;
+    position:inherit;
+}
+#graadmeter_header p {
+    font-family:'Open Sans',Tahoma,sans-serif;
+    font-size:12px;
+    text-transform:none;
+    line-height:150%;
+}
+#graadmeter_content {
+    font-family:'Open Sans',Tahoma,sans-serif;
+    font-size:11px;
+    background-image:url(/_assets/img/global/layout/bg-graadmeter-onder.jpg);
+    background-repeat:no-repeat;
+    background-size:contain;
+    border-radius:0 0 7px 7px;
+}
+#graadmeter_content h2 {
+    font-family:'Jockey One',sans-serif;
+    font-weight:bold;
+    font-size:30px;
+}
+#graadmeter_content * th {
+    text-transform:uppercase;
+    font-weight:bold;
+    font-size:13px;
+    transform:scale(0.75,1);
+    -ms-transform:scale(0.75,1);
+    -webkit-transform:scale(0.75,1);
+    -o-transform:scale(0.75,1);
+    -moz-transform:scale(0.75,1);
+}
+#graadmeter_content * th[align="left"] {
+    transform-origin:left;
+    -ms-transform-origin:left;
+    -webkit-transform-origin:left;
+    -o-transform-origin:left;
+    -moz-transform-origin:left;
+}
+#graadmeter_content * td {
+    font-size:11px;
+}
+#graadmeter_content *:not(input) {
+    color:#fff;
+}
