@@ -6,14 +6,17 @@
  */
 
 // Ontsleutel de invoerwaarden naar de bijbehorende refs.
-function getRefFromRandomValue($key, $randomizedRefMap) {
-    $value = filter_input(INPUT_POST, $key);
-    if (!$value || strlen(trim($value)) == 0) {
+function getRefFromEncodedValue($key, $ip_adres) {
+    $encodedValue = filter_input(INPUT_POST, $key);
+    if (!$encodedValue || strlen(trim($encodedValue)) == 0) {
         return '';
-    } else if (isset($randomizedRefMap[$value])) {
-        return $randomizedRefMap[$value];
     } else {
-        throw new Exception("Unknown: $value");
+        $trackRef = decodeTrackRef($encodedValue, $ip_adres);
+        // Check the format of the decoded track ref, see uniqueid().
+        if (preg_match('/[0-9A-Fa-f]+/', str_replace(".", "", $trackRef)) !== 1) {
+            throw new Exception("Unknown: $encodedValue");
+        }
+        return $trackRef;
     }
 }
 
@@ -23,16 +26,14 @@ $vandaag = date("Ymd");
 $ip_adres = getClientIP();
 $response = $ip_adres;
 
-$randomizedRefMapJSON = (isset($_SESSION['randomizedRefMap']) ? $_SESSION['randomizedRefMap'] : '');
 try {
-    $randomizedRefMap = json_decode($randomizedRefMapJSON, TRUE);
-    $ref_top41_voor = getRefFromRandomValue('ref_top41_voor', $randomizedRefMap);
-    $ref_top41_tegen = getRefFromRandomValue('ref_top41_tegen', $randomizedRefMap);
-    $ref_tip10_voor = getRefFromRandomValue('ref_tip10_voor', $randomizedRefMap);
-    $ref_tip10_tegen = getRefFromRandomValue('ref_tip10_tegen', $randomizedRefMap);
+    $ref_top41_voor = getRefFromEncodedValue('ref_top41_voor', $ip_adres);
+    $ref_top41_tegen = getRefFromEncodedValue('ref_top41_tegen', $ip_adres);
+    $ref_tip10_voor = getRefFromEncodedValue('ref_tip10_voor', $ip_adres);
+    $ref_tip10_tegen = getRefFromEncodedValue('ref_tip10_tegen', $ip_adres);
 } catch (Exception $e) {
     // Spambot request?!
-    echo $ip_adres . " spambot_vote:$value:$randomizedRefMapJSON";
+    echo $ip_adres . " spambot_vote:" . $e->getMessage();
     die();
 }
 
@@ -123,5 +124,3 @@ if (!$tip || strlen(trim($tip)) == 0) {
 
 
 echo $response;
-
-?>

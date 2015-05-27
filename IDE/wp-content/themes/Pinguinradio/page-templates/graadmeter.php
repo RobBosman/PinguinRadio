@@ -37,17 +37,13 @@ $rows = $wpdb->get_results($wpdb->prepare("SELECT * FROM `ext_graadmeter` ORDER 
 $rows_top41 = array();
 $rows_exit = array();
 $rows_tip10 = array();
-$randomizedRefMap = array();
 foreach ($rows as $row) {
     if ($row['lijst'] == 'exit') {
         $rows_exit[] = $row;
     } else {
-        // "Versleutel" alle $ref waarden van $rows_top41 en $rows_tip10, zodat stemmen niet meer door hackers kan
-        // worden geautomatiseerd.
-$randomValue = $row['ref'];
-//        $randomValue = strval(mt_rand());
-        $randomizedRefMap[$randomValue] = $row['ref'];
-        $row['randomValue'] = $randomValue;
+        // "Versleutel" alle $ref waarden van $rows_top41 en $rows_tip10 met het ip-adres, zodat stemmen niet meer door
+        // hackers kan worden geautomatiseerd.
+        $row['encodedRef'] = encodeTrackRef($row['ref'], $ip_adres);
         
         if ($row['lijst'] == 'top41') {
             $rows_top41[] = $row;
@@ -56,9 +52,6 @@ $randomValue = $row['ref'];
         }
     }
 }
-// Hou de mapping bij in de session, zodat alles bij het verwerken van het stem-request weer kan worden ontsleuteld,
-// zie vote.php.
-$_SESSION['randomizedRefMap'] = json_encode($randomizedRefMap);
 
 $MP3_BASE_URL = '/_assets/mp3/graadmeter/';
 $id = 0;
@@ -191,7 +184,7 @@ $(document).ready(function(){
                         $ijsbreker = ($row['ijsbreker'] == "J" ? ($row['positie_vw'] == 0 ? "IJSBREKER" : "ex-ijsbreker") : "&nbsp;");
                         $checkedVoor = ($stemData != NULL && $stemData['ref_top41_voor'] == $row['ref'] ? 'checked="checked"' : '');
                         $checkedTegen = ($stemData != NULL && $stemData['ref_top41_tegen'] == $row['ref'] ? 'checked="checked"' : '');
-                        $randomValue = $row['randomValue'];
+                        $encodedRef = $row['encodedRef'];
                         $player_id = $id++;
                         
                         echo "<tr class='graad-tr'><td align='center'>";
@@ -224,8 +217,8 @@ $(document).ready(function(){
                         echo "<td>" . $row['artiest'] . "</td>";
                         echo "<td>" . $row['track'] . "</td>";
                         echo "<td style='text-indent:20px;'>$ijsbreker </td>";
-                        echo "<td align='center'><input type='radio' name='ref_top41_voor' value='$randomValue' $checkedVoor /></td>";
-                        echo "<td align='center'><input type='radio' name='ref_top41_tegen' value='$randomValue' $checkedTegen /></td>";
+                        echo "<td align='center'><input type='radio' name='ref_top41_voor' value='$encodedRef' $checkedVoor /></td>";
+                        echo "<td align='center'><input type='radio' name='ref_top41_tegen' value='$encodedRef' $checkedTegen /></td>";
                         echo "</tr>";
                     } ?>
                 </tbody>
@@ -281,7 +274,7 @@ $(document).ready(function(){
                     <?php foreach ($rows_tip10 AS $row) {
                         $checkedVoor = ($stemData != NULL && $stemData['ref_tip10_voor'] == $row['ref'] ? 'checked="checked"' : '');
                         $checkedTegen = ($stemData != NULL && $stemData['ref_tip10_tegen'] == $row['ref'] ? 'checked="checked"' : '');
-                        $randomValue = $row['randomValue'];
+                        $encodedRef = $row['encodedRef'];
                         $tip_id = $idtip++;
                         
                         echo "<tr class=\"graad-tr\">";
@@ -318,8 +311,8 @@ $(document).ready(function(){
                         echo "<td>" . $row['artiest'] . "</td>";
                         echo "<td>" . $row['track'] . "</td>";
                         echo "<td align='right'></td>";
-                        echo "<td align='center'><input type='radio' name='ref_tip10_voor' value='$randomValue' $checkedVoor /></td>";
-                        echo "<td align='center'><input type='radio' name='ref_tip10_tegen' value='$randomValue' $checkedTegen /></td>";
+                        echo "<td align='center'><input type='radio' name='ref_tip10_voor' value='$encodedRef' $checkedVoor /></td>";
+                        echo "<td align='center'><input type='radio' name='ref_tip10_tegen' value='$encodedRef' $checkedTegen /></td>";
                         echo "</tr>";
                     } ?>
                 </tbody>

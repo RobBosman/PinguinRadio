@@ -22,13 +22,6 @@
  * @since Twenty Twelve 1.0
  */
 
-
-// Start session, nodig voor het stemmen in de Graadmeter.
-if (!session_id()) {
-    add_action('init', 'session_start');
-}
-
-
 /**
  * Sets up the content width value based on the theme's design and stylesheet.
  */

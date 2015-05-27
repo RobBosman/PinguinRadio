@@ -41,32 +41,39 @@ function escapeBackspaces($text) {
 }
 
 function getClientIP() {
+    // Gebruik hier NIET de functie filter_input(), zie https://bugs.php.net/bug.php?id=49184.
     return $_SERVER['REMOTE_ADDR'];
-/*
-    $ip_address = FALSE;
-    if (!$ip_address) {
-        $ip_address = getenv('HTTP_CLIENT_IP');
+}
+
+define('TRACK_REF_ENCODE_KEY', "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.");
+define('TRACK_REF_ENCODE_MAX', strlen(constant('TRACK_REF_ENCODE_KEY')));
+
+function encodeTrackRef($ref, $ip_adres) {
+    $KEY = constant('TRACK_REF_ENCODE_KEY');
+    $MAX = constant('TRACK_REF_ENCODE_MAX');
+    $salt = intval(preg_replace('/[^\d]+/', '', $ip_adres)) % $MAX;
+    $iv = mt_rand(0, $MAX - 1);
+    $refx = $KEY[$iv];
+    for ($i = 0; $i < strlen($ref); $i++) {
+        $c = strpos($KEY, $ref[$i]);
+        $y = ($c + $salt * ($iv + $i + 1)) % $MAX;
+        $refx .= $KEY[$y >= 0 ? $y : $y + $MAX];
     }
-    if (!$ip_address) {
-        $ip_address = getenv('HTTP_X_FORWARDED_FOR');
+    return $refx;
+}
+
+function decodeTrackRef($refx, $ip_adres) {
+    $KEY = constant('TRACK_REF_ENCODE_KEY');
+    $MAX = constant('TRACK_REF_ENCODE_MAX');
+    $salt = intval(preg_replace('/[^\d]+/', '', $ip_adres)) % $MAX;
+    $iv = strpos($KEY, $refx[0]);
+    $ref = "";
+    for ($i = 1; $i < strlen($refx); $i++) {
+        $x = strpos($KEY, $refx[$i]);
+        $y = ($x - $salt * ($i + $iv)) % $MAX;
+        $ref .= $KEY[$y >= 0 ? $y : $y + $MAX];
     }
-    if (!$ip_address) {
-        $ip_address = getenv('HTTP_X_FORWARDED');
-    }
-    if (!$ip_address) {
-        $ip_address = getenv('HTTP_FORWARDED_FOR');
-    }
-    if (!$ip_address) {
-        $ip_address = getenv('HTTP_FORWARDED');
-    }
-    if (!$ip_address) {
-        $ip_address = getenv('REMOTE_ADDR');
-    }
-    if (!$ip_address) {
-        $ip_address = getenv('UNKNOWN');
-    }
-    return $ip_address;
-*/
+    return $ref;
 }
 
 function graadmeter_sorteerLijst($lijst) {
@@ -173,5 +180,3 @@ function graadmeter_RESET() {
     die();
 }
 add_action('wp_ajax_graadmeter_RESET', 'graadmeter_RESET');
-
-?>

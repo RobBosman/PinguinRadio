@@ -17,41 +17,60 @@ $MP3_FILE_REFS = getMP3FileRefs();
 $rows_tips = $wpdb->get_results("SELECT * FROM `ext_graadmeter_tips` ORDER BY `tijdstip` DESC");
 $rows = $wpdb->get_results(
     "SELECT `g`.*,
-            (SELECT GROUP_CONCAT(`count`,':',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
-                FROM (SELECT `ref_top41_voor`,COUNT(1) AS `count`,`ip_adres`
-                    FROM `ext_graadmeter_stemmen`
-                    GROUP BY `ref_top41_voor`,`ip_adres`
-                ) `v`
-                WHERE `g`.`ref`=`ref_top41_voor`
-                GROUP BY `ref_top41_voor`
-            ) AS `stemmen_top41_voor_per_ip`,
-            (SELECT GROUP_CONCAT(`count`,':',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
-                FROM (SELECT `ref_top41_tegen`,COUNT(1) AS `count`,`ip_adres`
-                    FROM `ext_graadmeter_stemmen`
-                    GROUP BY `ref_top41_tegen`,`ip_adres`
-                ) `v`
-                WHERE `g`.`ref`=`ref_top41_tegen`
-                GROUP BY `ref_top41_tegen`
-            ) AS `stemmen_top41_tegen_per_ip`,
-            (SELECT GROUP_CONCAT(`count`,':',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
-                FROM (SELECT `ref_tip10_voor`,COUNT(1) AS `count`,`ip_adres`
-                    FROM `ext_graadmeter_stemmen`
-                    GROUP BY `ref_tip10_voor`,`ip_adres`
-                ) `v`
-                WHERE `g`.`ref`=`ref_tip10_voor`
-                GROUP BY `ref_tip10_voor`
-            ) AS `stemmen_tip10_voor_per_ip`,
-            (SELECT GROUP_CONCAT(`count`,':',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
-                FROM (SELECT `ref_tip10_tegen`,COUNT(1) AS `count`,`ip_adres`
-                    FROM `ext_graadmeter_stemmen`
-                    GROUP BY `ref_tip10_tegen`,`ip_adres`
-                ) `v`
-                WHERE `g`.`ref`=`ref_tip10_tegen`
-                GROUP BY `ref_tip10_tegen`
-            ) AS `stemmen_tip10_tegen_per_ip`,
-            (SELECT SUM((IF(`ref_top41_voor`,1,0)+IF(`ref_tip10_voor`,1,0)+IF(`ref_top41_tegen`,1,0)+IF(`ref_tip10_tegen`,1,0)))
+            IFNULL(
+                (SELECT GROUP_CONCAT(`count`,':',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
+                    FROM (SELECT `ref_top41_voor`,COUNT(1) AS `count`,`ip_adres`
+                        FROM `ext_graadmeter_stemmen`
+                        GROUP BY `ref_top41_voor`,`ip_adres`
+                        HAVING count>1
+                    ) `v`
+                    WHERE `g`.`ref`=`ref_top41_voor`
+                    GROUP BY `ref_top41_voor`
+                ),
+                (SELECT GROUP_CONCAT(`count`,':',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
+                    FROM (SELECT `ref_tip10_voor`,COUNT(1) AS `count`,`ip_adres`
+                        FROM `ext_graadmeter_stemmen`
+                        GROUP BY `ref_tip10_voor`,`ip_adres`
+                        HAVING count>1
+                    ) `v`
+                    WHERE `g`.`ref`=`ref_tip10_voor`
+                    GROUP BY `ref_tip10_voor`
+                )
+            ) AS `stemmen_voor_per_ip`,
+            
+            IFNULL(
+                (SELECT GROUP_CONCAT(`count`,':',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
+                    FROM (SELECT `ref_top41_tegen`,COUNT(1) AS `count`,`ip_adres`
+                        FROM `ext_graadmeter_stemmen`
+                        GROUP BY `ref_top41_tegen`,`ip_adres`
+                        HAVING count>1
+                    ) `v`
+                    WHERE `g`.`ref`=`ref_top41_tegen`
+                    GROUP BY `ref_top41_tegen`
+                ),
+                (SELECT GROUP_CONCAT(`count`,':',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
+                    FROM (SELECT `ref_tip10_tegen`,COUNT(1) AS `count`,`ip_adres`
+                        FROM `ext_graadmeter_stemmen`
+                        GROUP BY `ref_tip10_tegen`,`ip_adres`
+                        HAVING count>1
+                    ) `v`
+                    WHERE `g`.`ref`=`ref_tip10_tegen`
+                    GROUP BY `ref_tip10_tegen`
+                )
+            ) AS `stemmen_tegen_per_ip`,
+            
+            (SELECT COUNT(1)
                 FROM `ext_graadmeter_stemmen`
-            ) AS `totaal_stemmen`
+                WHERE `g`.`ref` IN(`ref_top41_voor`,`ref_tip10_voor`)
+            ) AS `stemmen_voor`,
+            (SELECT COUNT(1)
+                FROM `ext_graadmeter_stemmen`
+                WHERE `g`.`ref` IN(`ref_top41_tegen`,`ref_tip10_tegen`)
+            ) AS `stemmen_tegen`,
+            
+            (SELECT SUM(IF(`ref_top41_voor`,1,0)+IF(`ref_tip10_voor`,1,0)+IF(`ref_top41_tegen`,1,0)+IF(`ref_tip10_tegen`,1,0))
+                FROM `ext_graadmeter_stemmen`
+            ) AS `stemmen_totaal`
         FROM `ext_graadmeter_beheer` `g`
         ORDER BY `g`.`positie` ASC");
 $state_results = $wpdb->get_results("SELECT * FROM `ext_graadmeter_beheer_state` WHERE `published` IS NULL");
@@ -71,52 +90,57 @@ $totaal_stemmen_tip10_voor = 0;
 $totaal_stemmen_tip10_tegen = 0;
 $totaal_stemmen = 0;
 foreach ($rows as $row) {
-    // Voeg stemtotalen toe.
-    $row->stemmen_voor = 0;
+    // Stel de tekst voor de tooltips samen, maar alleen als er meerdere keren gestemd is vanaf hetzelfde ip-adres.
     $row->tooltip_stemmen_voor = '';
-    $row->stemmen_tegen = 0;
+    if (count($row->stemmen_voor_per_ip) > 0) {
+        $aantalStemmenInTooltip = 0;
+        foreach (explode('|', $row->stemmen_voor_per_ip) as $stem) {
+            $aantalIp = explode(':', $stem);
+            if (count($aantalIp) == 2) {
+                $row->tooltip_stemmen_voor .= $aantalIp[0] . ' van ip-adres ' . $aantalIp[1] . "\n";
+                $aantalStemmenInTooltip += $aantalIp[0];
+            }
+        }
+        $resterendAantalStemmen = $row->stemmen_voor - $aantalStemmenInTooltip;
+        if ($resterendAantalStemmen == 1) {
+            $row->tooltip_stemmen_voor .= "$resterendAantalStemmen van een ander ip-adres";
+        } else if ($resterendAantalStemmen > 1) {
+            $row->tooltip_stemmen_voor .= "$resterendAantalStemmen van andere ip-adressen";
+        }
+    }
+    
     $row->tooltip_stemmen_tegen = '';
-    foreach (explode('|', $row->stemmen_top41_voor_per_ip) as $stem) {
-        $aantalPerIp = explode(':', $stem);
-        if (count($aantalPerIp) == 2) {
-            $row->stemmen_voor += $aantalPerIp[0];
-            $row->tooltip_stemmen_voor .= $aantalPerIp[0] . ' van ip-adres ' . $aantalPerIp[1] . "\n";
-            $totaal_stemmen_top41_voor += $aantalPerIp[0];
+    if (count($row->stemmen_tegen_per_ip) > 0) {
+        $aantalStemmenInTooltip = 0;
+        foreach (explode('|', $row->stemmen_tegen_per_ip) as $stem) {
+            $aantalIp = explode(':', $stem);
+            if (count($aantalIp) == 2) {
+                $row->tooltip_stemmen_tegen .= $aantalIp[0] . ' van ip-adres ' . $aantalIp[1] . "\n";
+                $aantalStemmenInTooltip += $aantalIp[0];
+            }
+        }
+        $resterendAantalStemmen = $row->stemmen_tegen - $aantalStemmenInTooltip;
+        if ($resterendAantalStemmen == 1) {
+            $row->tooltip_stemmen_tegen .= "$resterendAantalStemmen van een ander ip-adres";
+        } else if ($resterendAantalStemmen > 1) {
+            $row->tooltip_stemmen_tegen .= "$resterendAantalStemmen van andere ip-adressen";
         }
     }
-    foreach (explode('|', $row->stemmen_top41_tegen_per_ip) as $stem) {
-        $aantalPerIp = explode(':', $stem);
-        if (count($aantalPerIp) == 2) {
-            $row->stemmen_tegen += $aantalPerIp[0];
-            $row->tooltip_stemmen_tegen .= $aantalPerIp[0] . ' van ip-adres ' . $aantalPerIp[1] . "\n";
-            $totaal_stemmen_top41_tegen += $aantalPerIp[0];
-        }
-    }
-    foreach (explode('|', $row->stemmen_tip10_voor_per_ip) as $stem) {
-        $aantalPerIp = explode(':', $stem);
-        if (count($aantalPerIp) == 2) {
-            $row->stemmen_voor += $aantalPerIp[0];
-            $row->tooltip_stemmen_voor .= $aantalPerIp[0] . ' van ip-adres ' . $aantalPerIp[1] . "\n";
-            $totaal_stemmen_tip10_voor += $aantalPerIp[0];
-        }
-    }
-    foreach (explode('|', $row->stemmen_tip10_tegen_per_ip) as $stem) {
-        $aantalPerIp = explode(':', $stem);
-        if (count($aantalPerIp) == 2) {
-            $row->stemmen_tegen += $aantalPerIp[0];
-            $row->tooltip_stemmen_tegen .= $aantalPerIp[0] . ' van ip-adres ' . $aantalPerIp[1] . "\n";
-            $totaal_stemmen_tip10_tegen += $aantalPerIp[0];
-        }
-    }
-    $totaal_stemmen = $row->totaal_stemmen;
-    // Verdeel de tracks over de drie lijsten.
+
+    // Voeg stemtotalen toe en verdeel de tracks over de drie lijsten.
     if ($row->lijst == 'top41') {
+        $totaal_stemmen_top41_voor += $row->stemmen_voor;
+        $totaal_stemmen_top41_tegen += $row->stemmen_tegen;
         $rows_top41[] = $row;
     } else if ($row->lijst == 'exit') {
         $rows_exit[] = $row;
     } else if ($row->lijst == 'tip10') {
+        $totaal_stemmen_tip10_voor += $row->stemmen_voor;
+        $totaal_stemmen_tip10_tegen += $row->stemmen_tegen;
         $rows_tip10[] = $row;
     }
+    
+    $totaal_stemmen = $row->stemmen_totaal;
 }
 
 // Bepaal de week waarin we leven.
