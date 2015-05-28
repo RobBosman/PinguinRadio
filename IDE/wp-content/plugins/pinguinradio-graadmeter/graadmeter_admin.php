@@ -64,7 +64,7 @@ $rows = $wpdb->get_results(
                 WHERE `g`.`ref` IN(`ref_top41_tegen`,`ref_tip10_tegen`)
             ) AS `stemmen_tegen`,
             
-            (SELECT SUM(IF(`ref_top41_voor`,1,0)+IF(`ref_tip10_voor`,1,0)+IF(`ref_top41_tegen`,1,0)+IF(`ref_tip10_tegen`,1,0))
+            (SELECT SUM(IF(`ref_top41_voor`<>'',1,0)+IF(`ref_tip10_voor`<>'',1,0)+IF(`ref_top41_tegen`<>'',1,0)+IF(`ref_tip10_tegen`<>'',1,0))
                 FROM `ext_graadmeter_stemmen`
             ) AS `stemmen_totaal`
         FROM `ext_graadmeter_beheer` `g`
@@ -136,6 +136,7 @@ foreach ($rows as $row) {
     
     $totaal_stemmen = $row->stemmen_totaal;
 }
+$som_stemmen = $totaal_stemmen_top41_voor + $totaal_stemmen_top41_tegen + $totaal_stemmen_tip10_voor + $totaal_stemmen_tip10_tegen;
 
 // Bepaal de week waarin we leven.
 $dagInWeek = date("N");
@@ -237,10 +238,11 @@ function RESET() {
 
     echo "<p>Stemmen Top&nbsp;41: $totaal_stemmen_top41_voor voor en $totaal_stemmen_top41_tegen tegen.";
     echo "<br />Stemmen Tip&nbsp;10: $totaal_stemmen_tip10_voor voor en $totaal_stemmen_tip10_tegen tegen.";
-    echo "<br />Totaal aantal stemmen: " . ($totaal_stemmen_top41_voor + $totaal_stemmen_top41_tegen + $totaal_stemmen_tip10_voor + $totaal_stemmen_tip10_tegen) . ".</p>";
-    if (!$isPrepared
-            && $totaal_stemmen_top41_voor + $totaal_stemmen_top41_tegen + $totaal_stemmen_tip10_voor + $totaal_stemmen_tip10_tegen != $totaal_stemmen) {
-        echo "<h2 class='error'>BUG: er is iets mis met de stemtotalen: $totaal_stemmen_top41_voor + $totaal_stemmen_top41_tegen + $totaal_stemmen_tip10_voor + $totaal_stemmen_tip10_tegen ≠ $totaal_stemmen.</h2>";
+    echo "<br />Totaal aantal stemmen: $som_stemmen.</p>";
+    if (!$isPrepared && $som_stemmen != $totaal_stemmen) {
+        echo "<h2 class='error'>BUG: er is iets mis met de stemtotalen: "
+                . "$totaal_stemmen_top41_voor + $totaal_stemmen_top41_tegen + $totaal_stemmen_tip10_voor + $totaal_stemmen_tip10_tegen"
+                . " = <b>$som_stemmen</b> ≠ <b>$totaal_stemmen</b>.</h2>";
     }
 
     if ($SERVER_IS_LOCALHOST) {

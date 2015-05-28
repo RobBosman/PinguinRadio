@@ -13,7 +13,7 @@ function getRefFromEncodedValue($key, $ip_adres) {
     } else {
         $trackRef = decodeTrackRef($encodedValue, $ip_adres);
         // Check the format of the decoded track ref, see uniqueid().
-        if (preg_match('/[0-9A-Fa-f]+/', str_replace(".", "", $trackRef)) !== 1) {
+        if (preg_match('/^[0-9A-Fa-f]+$/', str_replace(".", "", $trackRef)) !== 1) {
             throw new Exception("Unknown: $encodedValue");
         }
         return $trackRef;
