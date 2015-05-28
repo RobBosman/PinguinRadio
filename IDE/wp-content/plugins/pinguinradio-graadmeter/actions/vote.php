@@ -56,10 +56,9 @@ if (strlen($ref_top41_voor) == 0
         // Dit is een nieuwe stem.
         $numRows = $wpdb->query($wpdb->prepare(
             "INSERT INTO `ext_graadmeter_stemmen`
-                (`ip_adres`,`datum`,`ref_top41_voor`,`ref_top41_tegen`,`ref_tip10_voor`,`ref_tip10_tegen`)
-                VALUES(%s,%s,%s,%s,%s,%s)",
+                (`ip_adres`,`ref_top41_voor`,`ref_top41_tegen`,`ref_tip10_voor`,`ref_tip10_tegen`)
+                VALUES(%s,%s,%s,%s,%s)",
             $ip_adres,
-            $vandaag,
             $ref_top41_voor,
             $ref_top41_tegen,
             $ref_tip10_voor,

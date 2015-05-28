@@ -18,20 +18,18 @@ $rows_tips = $wpdb->get_results("SELECT * FROM `ext_graadmeter_tips` ORDER BY `t
 $rows = $wpdb->get_results(
     "SELECT `g`.*,
             IFNULL(
-                (SELECT GROUP_CONCAT(`count`,':',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
+                (SELECT GROUP_CONCAT(`count`,'@',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
                     FROM (SELECT `ref_top41_voor`,COUNT(1) AS `count`,`ip_adres`
                         FROM `ext_graadmeter_stemmen`
                         GROUP BY `ref_top41_voor`,`ip_adres`
-                        HAVING count>1
                     ) `v`
                     WHERE `g`.`ref`=`ref_top41_voor`
                     GROUP BY `ref_top41_voor`
                 ),
-                (SELECT GROUP_CONCAT(`count`,':',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
+                (SELECT GROUP_CONCAT(`count`,'@',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
                     FROM (SELECT `ref_tip10_voor`,COUNT(1) AS `count`,`ip_adres`
                         FROM `ext_graadmeter_stemmen`
                         GROUP BY `ref_tip10_voor`,`ip_adres`
-                        HAVING count>1
                     ) `v`
                     WHERE `g`.`ref`=`ref_tip10_voor`
                     GROUP BY `ref_tip10_voor`
@@ -39,20 +37,18 @@ $rows = $wpdb->get_results(
             ) AS `stemmen_voor_per_ip`,
             
             IFNULL(
-                (SELECT GROUP_CONCAT(`count`,':',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
+                (SELECT GROUP_CONCAT(`count`,'@',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
                     FROM (SELECT `ref_top41_tegen`,COUNT(1) AS `count`,`ip_adres`
                         FROM `ext_graadmeter_stemmen`
                         GROUP BY `ref_top41_tegen`,`ip_adres`
-                        HAVING count>1
                     ) `v`
                     WHERE `g`.`ref`=`ref_top41_tegen`
                     GROUP BY `ref_top41_tegen`
                 ),
-                (SELECT GROUP_CONCAT(`count`,':',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
+                (SELECT GROUP_CONCAT(`count`,'@',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
                     FROM (SELECT `ref_tip10_tegen`,COUNT(1) AS `count`,`ip_adres`
                         FROM `ext_graadmeter_stemmen`
                         GROUP BY `ref_tip10_tegen`,`ip_adres`
-                        HAVING count>1
                     ) `v`
                     WHERE `g`.`ref`=`ref_tip10_tegen`
                     GROUP BY `ref_tip10_tegen`
@@ -92,38 +88,36 @@ $totaal_stemmen = 0;
 foreach ($rows as $row) {
     // Stel de tekst voor de tooltips samen, maar alleen als er meerdere keren gestemd is vanaf hetzelfde ip-adres.
     $row->tooltip_stemmen_voor = '';
-    if (count($row->stemmen_voor_per_ip) > 0) {
-        $aantalStemmenInTooltip = 0;
-        foreach (explode('|', $row->stemmen_voor_per_ip) as $stem) {
-            $aantalIp = explode(':', $stem);
-            if (count($aantalIp) == 2) {
-                $row->tooltip_stemmen_voor .= $aantalIp[0] . ' van ip-adres ' . $aantalIp[1] . "\n";
-                $aantalStemmenInTooltip += $aantalIp[0];
+    if ($row->stemmen_voor_per_ip != NULL && count($row->stemmen_voor_per_ip) > 0) {
+        $aantallen_per_ip = explode('|', $row->stemmen_voor_per_ip);
+        $aantal_regels_in_tooltip = 0;
+        $aantal_stemmen_in_tooltip = 0;
+        foreach ($aantallen_per_ip as $aantal_per_ip) {
+            if ($aantal_regels_in_tooltip >= 30 && $row->stemmen_voor - $aantal_stemmen_in_tooltip > 1) {
+                $row->tooltip_stemmen_voor .= ($row->stemmen_voor - $aantal_stemmen_in_tooltip)
+                        . ' van andere ip-adressen';
+                break;
             }
-        }
-        $resterendAantalStemmen = $row->stemmen_voor - $aantalStemmenInTooltip;
-        if ($resterendAantalStemmen == 1) {
-            $row->tooltip_stemmen_voor .= "$resterendAantalStemmen van een ander ip-adres";
-        } else if ($resterendAantalStemmen > 1) {
-            $row->tooltip_stemmen_voor .= "$resterendAantalStemmen van andere ip-adressen";
+            $row->tooltip_stemmen_voor .= str_replace('@', ' van ip-adres ', $aantal_per_ip) . "\n";
+            $aantal_stemmen_in_tooltip += intval(str_replace('@.*', '', $aantal_per_ip));
+            $aantal_regels_in_tooltip++;
         }
     }
     
     $row->tooltip_stemmen_tegen = '';
-    if (count($row->stemmen_tegen_per_ip) > 0) {
-        $aantalStemmenInTooltip = 0;
-        foreach (explode('|', $row->stemmen_tegen_per_ip) as $stem) {
-            $aantalIp = explode(':', $stem);
-            if (count($aantalIp) == 2) {
-                $row->tooltip_stemmen_tegen .= $aantalIp[0] . ' van ip-adres ' . $aantalIp[1] . "\n";
-                $aantalStemmenInTooltip += $aantalIp[0];
+    if ($row->stemmen_tegen_per_ip != NULL && count($row->stemmen_tegen_per_ip) > 0) {
+        $aantallen_per_ip = explode('|', $row->stemmen_tegen_per_ip);
+        $aantal_regels_in_tooltip = 0;
+        $aantal_stemmen_in_tooltip = 0;
+        foreach ($aantallen_per_ip as $aantal_per_ip) {
+            if ($aantal_regels_in_tooltip >= 30 && $row->stemmen_tegen - $aantal_stemmen_in_tooltip > 1) {
+                $row->tooltip_stemmen_tegen .= ($row->stemmen_tegen- $aantal_stemmen_in_tooltip)
+                        . ' van andere ip-adressen';
+                break;
             }
-        }
-        $resterendAantalStemmen = $row->stemmen_tegen - $aantalStemmenInTooltip;
-        if ($resterendAantalStemmen == 1) {
-            $row->tooltip_stemmen_tegen .= "$resterendAantalStemmen van een ander ip-adres";
-        } else if ($resterendAantalStemmen > 1) {
-            $row->tooltip_stemmen_tegen .= "$resterendAantalStemmen van andere ip-adressen";
+            $row->tooltip_stemmen_tegen .= str_replace('@', ' van ip-adres ', $aantal_per_ip) . "\n";
+            $aantal_stemmen_in_tooltip += intval(str_replace('@.*', '', $aantal_per_ip));
+            $aantal_regels_in_tooltip++;
         }
     }
 
