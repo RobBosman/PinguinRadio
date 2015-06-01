@@ -14,7 +14,7 @@ $SERVER_IS_LOCALHOST = $SERVER_REMOTE_ADDR == "127.0.0.1" || $SERVER_REMOTE_ADDR
 // Get the list of available MP3 files.
 $MP3_FILE_REFS = getMP3FileRefs();
 
-$rows_tips = $wpdb->get_results("SELECT * FROM `ext_graadmeter_tips` ORDER BY `tijdstip` DESC");
+$rows_tips = $wpdb->get_results("SELECT * FROM `ext_graadmeter_tips` ORDER BY `tijdstip` DESC LIMIT 1000");
 $rows = $wpdb->get_results(
     "SELECT `g`.*,
             IFNULL(
