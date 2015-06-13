@@ -20,6 +20,34 @@ function getRefFromEncodedValue($key, $ip_adres) {
     }
 }
 
+// Als iemand minder dan een uur geleden precies dezelfde stem heeft uitgebracht vanaf een ander ip-adres in dezelfde
+// IP-range, beschouw deze stem dan als spam.
+function undoubleSimilarVotes($ip_adres, $ref_top41_voor, $ref_top41_tegen, $ref_tip10_voor, $ref_tip10_tegen) {
+    global $wpdb;
+    $equalVotes = $wpdb->get_row($wpdb->prepare(
+        // Zoek dezelfde stem (alle 4 identiek: top41/10/voor/tegen) op dezelfde dag maar vanaf een ander IP-adres.
+        // Check of dat andere adres in dezelfde IP-range valt, dus of de eertse 2 cijfers gelijk zijn:
+        "SELECT 1 FROM `ext_graadmeter_stemmen`
+            WHERE `ip_adres`<>%s -- different IP
+                AND SUBSTRING_INDEX(`ip_adres`,'.',2)=SUBSTRING_INDEX(%s,'.',2) -- same IP range
+                AND DATE_FORMAT(`datum`,%s)=%s -- same day
+                AND TIMESTAMPDIFF(MINUTE,`datum`,CURRENT_TIMESTAMP())<%s -- # minutes ago
+                AND `ref_top41_voor`=%s AND `ref_top41_tegen`=%s AND `ref_tip10_voor`=%s AND `ref_tip10_tegen`=%s",
+        $ip_adres,
+        $ip_adres,
+        '%Y%m%d',
+        date("Ymd"), // vandaag
+        60, // marge in minuten
+        $ref_top41_voor,
+        $ref_top41_tegen,
+        $ref_tip10_voor,
+        $ref_tip10_tegen
+    ));
+    if ($equalVotes !== NULL) {
+        throw new Exception("Matching vote from $ip_adres");
+    }
+}
+
 
 global $wpdb;
 $vandaag = date("Ymd");
@@ -31,6 +59,8 @@ try {
     $ref_top41_tegen = getRefFromEncodedValue('ref_top41_tegen', $ip_adres);
     $ref_tip10_voor = getRefFromEncodedValue('ref_tip10_voor', $ip_adres);
     $ref_tip10_tegen = getRefFromEncodedValue('ref_tip10_tegen', $ip_adres);
+    
+//    undoubleSimilarVotes($ip_adres, $ref_top41_voor, $ref_top41_tegen, $ref_tip10_voor, $ref_tip10_tegen);
 } catch (Exception $e) {
     // Spambot request?!
     echo $ip_adres . " spambot_vote:" . $e->getMessage();
@@ -38,10 +68,8 @@ try {
 }
 
 
-if (strlen($ref_top41_voor) == 0
-        && strlen($ref_top41_tegen) == 0
-        && strlen($ref_tip10_voor) == 0
-        && strlen($ref_tip10_tegen) == 0) {
+if (strlen($ref_top41_voor) == 0 && strlen($ref_top41_tegen) == 0
+        && strlen($ref_tip10_voor) == 0 && strlen($ref_tip10_tegen) == 0) {
     $response .= ' no_vote';
 } else {
     // Is er vanaf dit IP-adres vandaag eerder gestemd?
@@ -50,7 +78,7 @@ if (strlen($ref_top41_voor) == 0
         $ip_adres,
         '%Y%m%d',
         $vandaag
-    ), ARRAY_A);
+    ));
     
     if ($oldVotes == NULL) {
         // Dit is een nieuwe stem.
@@ -71,10 +99,8 @@ if (strlen($ref_top41_voor) == 0
         }
     } else {
         // Deze kiezer is op herhaling!
-        if ($ref_top41_voor == $oldVotes['ref_top41_voor']
-                && $ref_top41_tegen == $oldVotes['ref_top41_tegen']
-                && $ref_tip10_voor == $oldVotes['ref_tip10_voor']
-                && $ref_tip10_tegen == $oldVotes['ref_tip10_tegen']) {
+        if ($ref_top41_voor == $oldVotes->ref_top41_voor && $ref_top41_tegen == $oldVotes->ref_top41_tegen
+                && $ref_tip10_voor == $oldVotes->ref_tip10_voor && $ref_tip10_tegen == $oldVotes->ref_tip10_tegen) {
             $response .= ' same_vote';
         } else {
             $numRows = $wpdb->query($wpdb->prepare(
@@ -83,7 +109,8 @@ if (strlen($ref_top41_voor) == 0
                     `ref_top41_tegen`=%s,
                     `ref_tip10_voor`=%s,
                     `ref_tip10_tegen`=%s
-                    WHERE `ip_adres`=%s AND DATE_FORMAT(`datum`,%s)=%s",
+                    WHERE `ip_adres`=%s
+                      AND DATE_FORMAT(`datum`,%s)=%s",
                 $ref_top41_voor,
                 $ref_top41_tegen,
                 $ref_tip10_voor,
