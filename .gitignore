@@ -50,3 +50,5 @@ wp-content/wp-cache-config.php
 /IDE/_assets/mp3/graadmeter/archief/*
 /IDE/_assets/mp3/graadmeter/*.mp3
 /IDE/_assets/js/
+*.po
+*.mo
