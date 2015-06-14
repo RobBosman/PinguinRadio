@@ -15,60 +15,62 @@ $SERVER_IS_LOCALHOST = $SERVER_REMOTE_ADDR == "127.0.0.1" || $SERVER_REMOTE_ADDR
 $MP3_FILE_REFS = getMP3FileRefs();
 
 $rows_tips = $wpdb->get_results("SELECT * FROM `ext_graadmeter_tips` ORDER BY `tijdstip` DESC LIMIT 1000");
+$toon_alle_stemmen = strcasecmp(filter_input(INPUT_GET, 'showAllVotes'), 'true') === 0;
+$graadmeter_stemmen_table = ($toon_alle_stemmen ? 'ext_graadmeter_stemmen' : 'ext_graadmeter_stemmen_uniek');
 $rows = $wpdb->get_results(
     "SELECT `g`.*,
-            IFNULL(
-                (SELECT GROUP_CONCAT(`count`,'@',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
-                    FROM (SELECT `ref_top41_voor`,COUNT(1) AS `count`,`ip_adres`
-                        FROM `ext_graadmeter_stemmen`
-                        GROUP BY `ref_top41_voor`,`ip_adres`
-                    ) `v`
-                    WHERE `g`.`ref`=`ref_top41_voor`
-                    GROUP BY `ref_top41_voor`
-                ),
-                (SELECT GROUP_CONCAT(`count`,'@',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
-                    FROM (SELECT `ref_tip10_voor`,COUNT(1) AS `count`,`ip_adres`
-                        FROM `ext_graadmeter_stemmen`
-                        GROUP BY `ref_tip10_voor`,`ip_adres`
-                    ) `v`
-                    WHERE `g`.`ref`=`ref_tip10_voor`
-                    GROUP BY `ref_tip10_voor`
-                )
-            ) AS `stemmen_voor_per_ip`,
-            
-            IFNULL(
-                (SELECT GROUP_CONCAT(`count`,'@',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
-                    FROM (SELECT `ref_top41_tegen`,COUNT(1) AS `count`,`ip_adres`
-                        FROM `ext_graadmeter_stemmen`
-                        GROUP BY `ref_top41_tegen`,`ip_adres`
-                    ) `v`
-                    WHERE `g`.`ref`=`ref_top41_tegen`
-                    GROUP BY `ref_top41_tegen`
-                ),
-                (SELECT GROUP_CONCAT(`count`,'@',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
-                    FROM (SELECT `ref_tip10_tegen`,COUNT(1) AS `count`,`ip_adres`
-                        FROM `ext_graadmeter_stemmen`
-                        GROUP BY `ref_tip10_tegen`,`ip_adres`
-                    ) `v`
-                    WHERE `g`.`ref`=`ref_tip10_tegen`
-                    GROUP BY `ref_tip10_tegen`
-                )
-            ) AS `stemmen_tegen_per_ip`,
-            
-            (SELECT COUNT(1)
-                FROM `ext_graadmeter_stemmen`
-                WHERE `g`.`ref` IN(`ref_top41_voor`,`ref_tip10_voor`)
-            ) AS `stemmen_voor`,
-            (SELECT COUNT(1)
-                FROM `ext_graadmeter_stemmen`
-                WHERE `g`.`ref` IN(`ref_top41_tegen`,`ref_tip10_tegen`)
-            ) AS `stemmen_tegen`,
-            
-            (SELECT SUM(IF(`ref_top41_voor`<>'',1,0)+IF(`ref_tip10_voor`<>'',1,0)+IF(`ref_top41_tegen`<>'',1,0)+IF(`ref_tip10_tegen`<>'',1,0))
-                FROM `ext_graadmeter_stemmen`
-            ) AS `stemmen_totaal`
-        FROM `ext_graadmeter_beheer` `g`
-        ORDER BY `g`.`positie` ASC");
+        IFNULL(
+            (SELECT GROUP_CONCAT(`count`,'@',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
+                FROM (SELECT `ref_top41_voor`,COUNT(1) AS `count`,`ip_adres`
+                    FROM `$graadmeter_stemmen_table`
+                    GROUP BY `ref_top41_voor`,`ip_adres`
+                ) `v`
+                WHERE `g`.`ref`=`ref_top41_voor`
+                GROUP BY `ref_top41_voor`
+            ),
+            (SELECT GROUP_CONCAT(`count`,'@',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
+                FROM (SELECT `ref_tip10_voor`,COUNT(1) AS `count`,`ip_adres`
+                    FROM `$graadmeter_stemmen_table`
+                    GROUP BY `ref_tip10_voor`,`ip_adres`
+                ) `v`
+                WHERE `g`.`ref`=`ref_tip10_voor`
+                GROUP BY `ref_tip10_voor`
+            )
+        ) AS `stemmen_voor_per_ip`,
+
+        IFNULL(
+            (SELECT GROUP_CONCAT(`count`,'@',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
+                FROM (SELECT `ref_top41_tegen`,COUNT(1) AS `count`,`ip_adres`
+                    FROM `$graadmeter_stemmen_table`
+                    GROUP BY `ref_top41_tegen`,`ip_adres`
+                ) `v`
+                WHERE `g`.`ref`=`ref_top41_tegen`
+                GROUP BY `ref_top41_tegen`
+            ),
+            (SELECT GROUP_CONCAT(`count`,'@',`ip_adres` ORDER BY `count` DESC,`ip_adres` SEPARATOR '|')
+                FROM (SELECT `ref_tip10_tegen`,COUNT(1) AS `count`,`ip_adres`
+                    FROM `$graadmeter_stemmen_table`
+                    GROUP BY `ref_tip10_tegen`,`ip_adres`
+                ) `v`
+                WHERE `g`.`ref`=`ref_tip10_tegen`
+                GROUP BY `ref_tip10_tegen`
+            )
+        ) AS `stemmen_tegen_per_ip`,
+
+        (SELECT COUNT(1)
+            FROM `$graadmeter_stemmen_table`
+            WHERE `g`.`ref` IN(`ref_top41_voor`,`ref_tip10_voor`)
+        ) AS `stemmen_voor`,
+        (SELECT COUNT(1)
+            FROM `$graadmeter_stemmen_table`
+            WHERE `g`.`ref` IN(`ref_top41_tegen`,`ref_tip10_tegen`)
+        ) AS `stemmen_tegen`,
+
+        (SELECT SUM(IF(`ref_top41_voor`<>'',1,0)+IF(`ref_tip10_voor`<>'',1,0)+IF(`ref_top41_tegen`<>'',1,0)+IF(`ref_tip10_tegen`<>'',1,0))
+            FROM `$graadmeter_stemmen_table`
+        ) AS `stemmen_totaal`
+    FROM `ext_graadmeter_beheer` `g`
+    ORDER BY `g`.`positie` ASC");
 $state_results = $wpdb->get_results("SELECT * FROM `ext_graadmeter_beheer_state` WHERE `published` IS NULL");
 $isEditable = FALSE;
 $isPrepared = FALSE;
@@ -183,7 +185,6 @@ if ($SERVER_IS_LOCALHOST) {
     <script type="text/javascript" language="javascript" src="../wp-content/plugins/pinguinradio-graadmeter/assets/jquery.jeditable.js" type="text/javascript"></script>
     <script type="text/javascript" language="javascript" src="../wp-content/plugins/pinguinradio-graadmeter/assets/jquery.validate.js" type="text/javascript"></script>
     <script type="text/javascript" language="javascript" src="../wp-content/plugins/pinguinradio-graadmeter/assets/jquery.dataTables.editable.js" type="text/javascript"></script>
-    <script type="text/javascript" language="javascript" src="../wp-content/plugins/pinguinradio-graadmeter/assets/jdataview.js"></script>
     <script type="text/javascript" language="javascript" src="../wp-content/plugins/pinguinradio-graadmeter/assets/graadmeter_admin.js"></script>
     <script type="text/javascript" language="javascript">
 <?php if ($SERVER_IS_LOCALHOST) { ?>
@@ -220,20 +221,26 @@ function RESET() {
         <p />
         <p>Dit overschrijft de gegevens in de LIVE omgeving, maar houdt de stemgegevens intact.</p>
     </div>
-
-    <a style="position:absolute; top:60px; right:0; text-align:right;" onclick="location.reload();">
-        <i>deze pagina is geladen op<br /><?php echo date("d-m-Y H:i:s"); ?></i>
-    </a>
 <?php
-
+    echo "<div style='position:relative;'>";
+    
+    echo "<a style='position:absolute; top:60px; right:0; text-align:right;' onclick='location.reload();'>"
+            . "<i>deze pagina is geladen op<br />" . date("d-m-Y H:i:s") . "</i></a>";
+    
     echo "<h1>Graadmeter BEHEER</h1>";
+    
+    echo "<div style='position:absolute; right:0px; border:1px solid #AAA; padding:2px;'>"
+            . "<label style='font-size:13px; font-weight:normal; vertical-align:baseline;'>negeer 'spam' stemmen</label>"
+            . "<input type='checkbox'" . (!$toon_alle_stemmen ? ' checked="checked"' : '') . " onchange='filterVotes(!this.checked);' />"
+            . "</div>";
+
     $welkeWeek = "";
     if ($isPrepared) {
         $welkeWeek = ($isWeekend ? 'komende' : 'VOLGENDE');
     } else {
         $welkeWeek = ($isWeekend ? 'AFGELOPEN' : 'HUIDIGE');
     }
-    echo "<div id='graadmeter_edit_week' style='position:absolute; top:10px; right:0; font-size: 15px;'>"
+    echo "<div id='graadmeter_edit_week' style='position:absolute; top:0px; right:0; font-size:15px;'>"
             . "je bewerkt nu de lijsten van de <b style='font-size:20px;'>$welkeWeek</b> week van $datumVan&nbsp;t/m&nbsp;$datumTot</div>";
 
     echo "<p>Stemmen Top&nbsp;41: $totaal_stemmen_top41_voor voor en $totaal_stemmen_top41_tegen tegen.";
@@ -246,10 +253,11 @@ function RESET() {
     }
 
     if ($SERVER_IS_LOCALHOST) {
-        echo '<button id="resetButton" style="position:absolute; top:35px; right:0; margin-left:10px; color:white; background-color:red;"
-                onclick="RESET();">BEHEERgegevens RESETTEN</button>';
+        echo "<button id='resetButton' style='position:absolute; top:65px; right:130px; margin-left:10px; color:white; background-color:red;'"
+                . " onclick='reloadPage();'>BEHEERgegevens RESETTEN</button>";
     }
 
+    echo "</div>";
 ?>
     <div class="graadmeter_beheer_button">
         <button id="prepareButton" style="margin:6px;" <?php if ($isEditable) { echo 'disabled="disabled"'; } ?>
@@ -263,7 +271,7 @@ function RESET() {
         <button id="unlockButton" style="margin:6px; float:right;" <?php if ($isEditable) { echo 'disabled="disabled"'; } ?>
                 onclick="unlock();">Beheeromgeving ontgrendelen</button>
     </div>
-
+    
     <div id="graadmeter_beheer">
         <h2>De Graadmeter Top 41</h2>
         <div id="datatable-top41-wrapper" style="margin:0px; padding:0px;" >

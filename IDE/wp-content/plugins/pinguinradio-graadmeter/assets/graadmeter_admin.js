@@ -65,6 +65,18 @@ function showMP3UploadDialog(ref) {
         });
 }
 
+function filterVotes(mustShowAllVotes) {
+    var reload_location = window.location.href;
+    var queryStringParam = 'showAllVotes=' + (mustShowAllVotes ? 'true' : 'false');
+    var index = reload_location.search(/[\?&]showAllVotes=[^&]+/i);
+    if (index >= 0) {
+        reload_location = reload_location.replace(/showAllVotes=[^&]+/i, queryStringParam);
+    } else {
+        reload_location += (reload_location.search(/[\?&]/) ? '&' : '?') + queryStringParam;
+    }
+    window.location = reload_location;
+}
+
 function unlock() {
     if (confirm("Dit ontgrendelt de BEHEERomgeving voor het corrigeren van de huidige LIVE lijsten.\n\nDoorgaan?")) {
         $.post(ajaxurl, {
