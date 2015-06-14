@@ -229,8 +229,8 @@ function RESET() {
     
     echo "<h1>Graadmeter BEHEER</h1>";
     
-    echo "<div style='position:absolute; right:0px; border:1px solid #AAA; padding:2px;'>"
-            . "<label style='font-size:13px; font-weight:normal; vertical-align:baseline;'>negeer 'spam' stemmen</label>"
+    echo "<div style='position:absolute; right:0px;'>"
+            . "<label style='font-size:13px; font-weight:normal; vertical-align:baseline;'>'spam' stemmen negeren&nbsp;</label>"
             . "<input type='checkbox'" . (!$toon_alle_stemmen ? ' checked="checked"' : '') . " onchange='filterVotes(!this.checked);' />"
             . "</div>";
 
